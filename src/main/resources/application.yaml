@@ -1,0 +1,11 @@
+ebean:
+  ddl:
+    generate: false  # Отключаем автогенерацию DDL
+    run: false
+
+datasource:
+  db:
+    username: postgres
+    password: 0031
+    url: jdbc:postgresql://localhost:5432/stud36x
+    driver: org.postgresql.Driver
