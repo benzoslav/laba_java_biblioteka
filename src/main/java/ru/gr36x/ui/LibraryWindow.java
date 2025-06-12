@@ -70,7 +70,7 @@ public class LibraryWindow extends JFrame {
                 if (text.trim().length() == 0) {
                     sorter.setRowFilter(null);
                 } else {
-                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1)); // 1 = колонка "Имя"
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
                 }
             }
         });
@@ -78,7 +78,6 @@ public class LibraryWindow extends JFrame {
         filterPanel.add(searchLabel, BorderLayout.WEST);
         filterPanel.add(searchField, BorderLayout.CENTER);
 
-        // --- Кнопки ---
         JButton addBtn = new JButton("Добавить");
         addBtn.addActionListener(e -> {
             AuthorFormDialog dialog = new AuthorFormDialog(this, null);
@@ -120,10 +119,16 @@ public class LibraryWindow extends JFrame {
             }
         });
 
+        JButton refreshBtn = new JButton("Обновить");
+        refreshBtn.addActionListener(e -> {
+            authorTableModel.setAuthors(service.getAllAuthors());
+        });
+
         JPanel buttons = new JPanel();
         buttons.add(addBtn);
         buttons.add(editBtn);
         buttons.add(deleteBtn);
+        buttons.add(refreshBtn);
 
         panel.add(filterPanel, BorderLayout.NORTH);
         panel.add(scrollPane, BorderLayout.CENTER);
@@ -185,7 +190,6 @@ public class LibraryWindow extends JFrame {
         JTable table = new JTable(bookTableModel);
         JScrollPane scrollPane = new JScrollPane(table);
 
-        // Фильтр по названию книги
         TableRowSorter<BookTableModel> sorter = new TableRowSorter<>(bookTableModel);
         table.setRowSorter(sorter);
 
@@ -208,7 +212,7 @@ public class LibraryWindow extends JFrame {
                 if (text.trim().length() == 0) {
                     sorter.setRowFilter(null);
                 } else {
-                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1)); // 1 = колонка "Название"
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
                 }
             }
         });
@@ -243,7 +247,6 @@ public class LibraryWindow extends JFrame {
                 dialog.setVisible(true);
                 if (dialog.isSaved()) {
                     service.updateBook(book.getIsbn(), dialog.getTitleValue(), dialog.getYearValue());
-                    // Обновление автора можно добавить отдельно, если нужно
                     bookTableModel.setBooks(service.getAllBooks());
                 }
             } else {
@@ -264,10 +267,16 @@ public class LibraryWindow extends JFrame {
             }
         });
 
+        JButton refreshBtn = new JButton("Обновить");
+        refreshBtn.addActionListener(e -> {
+            bookTableModel.setBooks(service.getAllBooks());
+        });
+
         JPanel buttons = new JPanel();
         buttons.add(addBtn);
         buttons.add(editBtn);
         buttons.add(deleteBtn);
+        buttons.add(refreshBtn);
 
         panel.add(filterPanel, BorderLayout.NORTH);
         panel.add(scrollPane, BorderLayout.CENTER);
@@ -330,7 +339,6 @@ public class LibraryWindow extends JFrame {
         JTable table = new JTable(clientTableModel);
         JScrollPane scrollPane = new JScrollPane(table);
 
-        // Фильтр по ФИО клиента
         TableRowSorter<ClientTableModel> sorter = new TableRowSorter<>(clientTableModel);
         table.setRowSorter(sorter);
 
@@ -353,7 +361,7 @@ public class LibraryWindow extends JFrame {
                 if (text.trim().length() == 0) {
                     sorter.setRowFilter(null);
                 } else {
-                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1)); // 1 = колонка "ФИО"
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
                 }
             }
         });
@@ -402,10 +410,16 @@ public class LibraryWindow extends JFrame {
             }
         });
 
+        JButton refreshBtn = new JButton("Обновить");
+        refreshBtn.addActionListener(e -> {
+            clientTableModel.setClients(service.getAllClients());
+        });
+
         JPanel buttons = new JPanel();
         buttons.add(addBtn);
         buttons.add(editBtn);
         buttons.add(deleteBtn);
+        buttons.add(refreshBtn);
 
         panel.add(filterPanel, BorderLayout.NORTH);
         panel.add(scrollPane, BorderLayout.CENTER);
