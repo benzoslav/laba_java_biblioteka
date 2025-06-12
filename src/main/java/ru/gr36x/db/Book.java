@@ -2,6 +2,7 @@ package ru.gr36x.db;
 
 import io.ebean.Model;
 import jakarta.persistence.*;
+import java.util.List;
 
 @Entity
 public class Book extends Model {
@@ -10,19 +11,24 @@ public class Book extends Model {
 
     private String title;
     private int year;
+    private int quantity; // Количество экземпляров книги
 
     @ManyToOne
     @JoinColumn(name = "author_id")
     private Author author;
 
-    public Book(String isbn, String title, int year, Author author) {
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL)
+    private List<BookLoan> loans;
+
+    public Book(String isbn, String title, int year, Author author, int quantity) {
         this.isbn = isbn;
         this.title = title;
         this.year = year;
         this.author = author;
+        this.quantity = quantity;
     }
 
-    // Getters and Setters
+    // Геттеры и сеттеры
     public String getIsbn() { return isbn; }
     public void setIsbn(String isbn) { this.isbn = isbn; }
     public String getTitle() { return title; }
@@ -31,4 +37,14 @@ public class Book extends Model {
     public void setYear(int year) { this.year = year; }
     public Author getAuthor() { return author; }
     public void setAuthor(Author author) { this.author = author; }
+    public int getQuantity() { return quantity; }
+    public void setQuantity(int quantity) { this.quantity = quantity; }
+    public List<BookLoan> getLoans() { return loans; }
+    public void setLoans(List<BookLoan> loans) { this.loans = loans; }
+
+    @Override
+    public String toString() {
+        return title;
+    }
+
 }

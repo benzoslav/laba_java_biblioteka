@@ -1,7 +1,7 @@
 ebean:
   ddl:
-    generate: true  # Отключаем автогенерацию DDL
-    run: true
+    generate: false  # Отключаем автогенерацию DDL
+    run: false
 
 datasource:
   db:

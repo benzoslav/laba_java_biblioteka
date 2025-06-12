@@ -3,26 +3,29 @@ package ru.gr36x.ui;
 import ru.gr36x.db.Author;
 import ru.gr36x.db.Book;
 import ru.gr36x.db.Client;
+import ru.gr36x.db.BookLoan;
 import ru.gr36x.service.LibraryService;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class LibraryWindow extends JFrame {
     private final LibraryService service;
-
     private AuthorTableModel authorTableModel;
     private BookTableModel bookTableModel;
     private ClientTableModel clientTableModel;
+    private LoanTableModel loanTableModel;
 
     public LibraryWindow(LibraryService service) {
         this.service = service;
 
         setTitle("Библиотека");
-        setSize(900, 600);
+        setSize(1000, 600);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -30,6 +33,7 @@ public class LibraryWindow extends JFrame {
         tabs.add("Авторы", createAuthorPanel());
         tabs.add("Книги", createBookPanel());
         tabs.add("Клиенты", createClientPanel());
+        tabs.add("Выдача", createLoanPanel());
 
         add(tabs);
         setVisible(true);
@@ -56,22 +60,13 @@ public class LibraryWindow extends JFrame {
         JTextField searchField = new JTextField();
 
         searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
-                applyFilter();
-            }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                applyFilter();
-            }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
-                applyFilter();
-            }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
             private void applyFilter() {
                 String text = searchField.getText();
-                if (text.trim().length() == 0) {
-                    sorter.setRowFilter(null);
-                } else {
-                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
-                }
+                if (text.trim().isEmpty()) sorter.setRowFilter(null);
+                else sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
             }
         });
 
@@ -91,9 +86,9 @@ public class LibraryWindow extends JFrame {
 
         JButton editBtn = new JButton("Редактировать");
         editBtn.addActionListener(e -> {
-            int selectedRow = table.getSelectedRow();
-            if (selectedRow >= 0) {
-                int modelRow = table.convertRowIndexToModel(selectedRow);
+            int sel = table.getSelectedRow();
+            if (sel >= 0) {
+                int modelRow = table.convertRowIndexToModel(sel);
                 Author author = authorTableModel.getAuthorAt(modelRow);
                 AuthorFormDialog dialog = new AuthorFormDialog(this, author);
                 dialog.setVisible(true);
@@ -108,9 +103,9 @@ public class LibraryWindow extends JFrame {
 
         JButton deleteBtn = new JButton("Удалить");
         deleteBtn.addActionListener(e -> {
-            int selectedRow = table.getSelectedRow();
-            if (selectedRow >= 0) {
-                int modelRow = table.convertRowIndexToModel(selectedRow);
+            int sel = table.getSelectedRow();
+            if (sel >= 0) {
+                int modelRow = table.convertRowIndexToModel(sel);
                 Author author = authorTableModel.getAuthorAt(modelRow);
                 service.deleteAuthor(author.getId());
                 authorTableModel.setAuthors(service.getAllAuthors());
@@ -120,9 +115,7 @@ public class LibraryWindow extends JFrame {
         });
 
         JButton refreshBtn = new JButton("Обновить");
-        refreshBtn.addActionListener(e -> {
-            authorTableModel.setAuthors(service.getAllAuthors());
-        });
+        refreshBtn.addActionListener(e -> authorTableModel.setAuthors(service.getAllAuthors()));
 
         JPanel buttons = new JPanel();
         buttons.add(addBtn);
@@ -133,7 +126,6 @@ public class LibraryWindow extends JFrame {
         panel.add(filterPanel, BorderLayout.NORTH);
         panel.add(scrollPane, BorderLayout.CENTER);
         panel.add(buttons, BorderLayout.SOUTH);
-
         return panel;
     }
 
@@ -141,44 +133,29 @@ public class LibraryWindow extends JFrame {
         private List<Author> authors;
         private final String[] columns = {"ID", "ФИО", "Страна"};
 
-        public AuthorTableModel(List<Author> authors) {
-            this.authors = authors;
-        }
+        public AuthorTableModel(List<Author> authors) { this.authors = authors; }
 
         public void setAuthors(List<Author> authors) {
             this.authors = authors;
             fireTableDataChanged();
         }
 
-        @Override
-        public int getRowCount() {
-            return authors.size();
-        }
+        @Override public int getRowCount() { return authors.size(); }
+        @Override public int getColumnCount() { return columns.length; }
+        @Override public String getColumnName(int col) { return columns[col]; }
 
         @Override
-        public int getColumnCount() {
-            return columns.length;
-        }
-
-        @Override
-        public String getColumnName(int column) {
-            return columns[column];
-        }
-
-        @Override
-        public Object getValueAt(int rowIndex, int columnIndex) {
-            Author author = authors.get(rowIndex);
-            return switch (columnIndex) {
-                case 0 -> author.getId();
-                case 1 -> author.getName();
-                case 2 -> author.getCountry();
+        public Object getValueAt(int row, int col) {
+            Author a = authors.get(row);
+            return switch (col) {
+                case 0 -> a.getId();
+                case 1 -> a.getName();
+                case 2 -> a.getCountry();
                 default -> null;
             };
         }
 
-        public Author getAuthorAt(int row) {
-            return authors.get(row);
-        }
+        public Author getAuthorAt(int row) { return authors.get(row); }
     }
 
     // ---------------- Книги ----------------
@@ -198,22 +175,13 @@ public class LibraryWindow extends JFrame {
         JTextField searchField = new JTextField();
 
         searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
-                applyFilter();
-            }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                applyFilter();
-            }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
-                applyFilter();
-            }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
             private void applyFilter() {
                 String text = searchField.getText();
-                if (text.trim().length() == 0) {
-                    sorter.setRowFilter(null);
-                } else {
-                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
-                }
+                if (text.trim().isEmpty()) sorter.setRowFilter(null);
+                else sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
             }
         });
 
@@ -230,7 +198,8 @@ public class LibraryWindow extends JFrame {
             BookFormDialog dialog = new BookFormDialog(this, null, authors);
             dialog.setVisible(true);
             if (dialog.isSaved()) {
-                Book book = new Book(dialog.getIsbnValue(), dialog.getTitleValue(), dialog.getYearValue(), dialog.getSelectedAuthor());
+                Book book = new Book(dialog.getIsbnValue(), dialog.getTitleValue(),
+                        dialog.getYearValue(), dialog.getSelectedAuthor(), dialog.getQuantityValue());
                 service.createBook(book);
                 bookTableModel.setBooks(service.getAllBooks());
             }
@@ -238,15 +207,16 @@ public class LibraryWindow extends JFrame {
 
         JButton editBtn = new JButton("Редактировать");
         editBtn.addActionListener(e -> {
-            int selectedRow = table.getSelectedRow();
-            if (selectedRow >= 0) {
-                int modelRow = table.convertRowIndexToModel(selectedRow);
-                Book book = bookTableModel.getBookAt(modelRow);
+            int sel = table.getSelectedRow();
+            if (sel >= 0) {
+                int mr = table.convertRowIndexToModel(sel);
+                Book book = bookTableModel.getBookAt(mr);
                 List<Author> authors = service.getAllAuthors();
                 BookFormDialog dialog = new BookFormDialog(this, book, authors);
                 dialog.setVisible(true);
                 if (dialog.isSaved()) {
-                    service.updateBook(book.getIsbn(), dialog.getTitleValue(), dialog.getYearValue());
+                    service.updateBook(book.getIsbn(), dialog.getTitleValue(),
+                            dialog.getYearValue(), dialog.getQuantityValue());
                     bookTableModel.setBooks(service.getAllBooks());
                 }
             } else {
@@ -256,10 +226,10 @@ public class LibraryWindow extends JFrame {
 
         JButton deleteBtn = new JButton("Удалить");
         deleteBtn.addActionListener(e -> {
-            int selectedRow = table.getSelectedRow();
-            if (selectedRow >= 0) {
-                int modelRow = table.convertRowIndexToModel(selectedRow);
-                Book book = bookTableModel.getBookAt(modelRow);
+            int sel = table.getSelectedRow();
+            if (sel >= 0) {
+                int mr = table.convertRowIndexToModel(sel);
+                Book book = bookTableModel.getBookAt(mr);
                 service.deleteBook(book.getIsbn());
                 bookTableModel.setBooks(service.getAllBooks());
             } else {
@@ -268,9 +238,7 @@ public class LibraryWindow extends JFrame {
         });
 
         JButton refreshBtn = new JButton("Обновить");
-        refreshBtn.addActionListener(e -> {
-            bookTableModel.setBooks(service.getAllBooks());
-        });
+        refreshBtn.addActionListener(e -> bookTableModel.setBooks(service.getAllBooks()));
 
         JPanel buttons = new JPanel();
         buttons.add(addBtn);
@@ -281,53 +249,38 @@ public class LibraryWindow extends JFrame {
         panel.add(filterPanel, BorderLayout.NORTH);
         panel.add(scrollPane, BorderLayout.CENTER);
         panel.add(buttons, BorderLayout.SOUTH);
-
         return panel;
     }
 
     static class BookTableModel extends AbstractTableModel {
         private List<Book> books;
-        private final String[] columns = {"ISBN", "Название", "Год", "Автор"};
+        private final String[] columns = {"ISBN", "Название", "Год", "Автор", "Кол‑во"};
 
-        public BookTableModel(List<Book> books) {
-            this.books = books;
-        }
+        public BookTableModel(List<Book> books) { this.books = books; }
 
         public void setBooks(List<Book> books) {
             this.books = books;
             fireTableDataChanged();
         }
 
-        @Override
-        public int getRowCount() {
-            return books.size();
-        }
+        @Override public int getRowCount() { return books.size(); }
+        @Override public int getColumnCount() { return columns.length; }
+        @Override public String getColumnName(int col) { return columns[col]; }
 
         @Override
-        public int getColumnCount() {
-            return columns.length;
-        }
-
-        @Override
-        public String getColumnName(int column) {
-            return columns[column];
-        }
-
-        @Override
-        public Object getValueAt(int rowIndex, int columnIndex) {
-            Book book = books.get(rowIndex);
-            return switch (columnIndex) {
-                case 0 -> book.getIsbn();
-                case 1 -> book.getTitle();
-                case 2 -> book.getYear();
-                case 3 -> book.getAuthor() != null ? book.getAuthor().getName() : "";
+        public Object getValueAt(int row, int col) {
+            Book b = books.get(row);
+            return switch (col) {
+                case 0 -> b.getIsbn();
+                case 1 -> b.getTitle();
+                case 2 -> b.getYear();
+                case 3 -> b.getAuthor() != null ? b.getAuthor().getName() : "";
+                case 4 -> b.getQuantity();
                 default -> null;
             };
         }
 
-        public Book getBookAt(int row) {
-            return books.get(row);
-        }
+        public Book getBookAt(int row) { return books.get(row); }
     }
 
     // ---------------- Клиенты ----------------
@@ -347,22 +300,13 @@ public class LibraryWindow extends JFrame {
         JTextField searchField = new JTextField();
 
         searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
-                applyFilter();
-            }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                applyFilter();
-            }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
-                applyFilter();
-            }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
             private void applyFilter() {
                 String text = searchField.getText();
-                if (text.trim().length() == 0) {
-                    sorter.setRowFilter(null);
-                } else {
-                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
-                }
+                if (text.trim().isEmpty()) sorter.setRowFilter(null);
+                else sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
             }
         });
 
@@ -374,22 +318,22 @@ public class LibraryWindow extends JFrame {
             ClientFormDialog dialog = new ClientFormDialog(this, null);
             dialog.setVisible(true);
             if (dialog.isSaved()) {
-                Client client = new Client(dialog.getFullName(), dialog.getGender(), dialog.getAge());
-                service.createClient(client);
+                Client c = new Client(dialog.getFullName(), dialog.getGender(), dialog.getAge());
+                service.createClient(c);
                 clientTableModel.setClients(service.getAllClients());
             }
         });
 
         JButton editBtn = new JButton("Редактировать");
         editBtn.addActionListener(e -> {
-            int selectedRow = table.getSelectedRow();
-            if (selectedRow >= 0) {
-                int modelRow = table.convertRowIndexToModel(selectedRow);
-                Client client = clientTableModel.getClientAt(modelRow);
-                ClientFormDialog dialog = new ClientFormDialog(this, client);
+            int sel = table.getSelectedRow();
+            if (sel >= 0) {
+                int mr = table.convertRowIndexToModel(sel);
+                Client c = clientTableModel.getClientAt(mr);
+                ClientFormDialog dialog = new ClientFormDialog(this, c);
                 dialog.setVisible(true);
                 if (dialog.isSaved()) {
-                    service.updateClient(client.getId(), dialog.getFullName(), dialog.getGender(), dialog.getAge());
+                    service.updateClient(c.getId(), dialog.getFullName(), dialog.getGender(), dialog.getAge());
                     clientTableModel.setClients(service.getAllClients());
                 }
             } else {
@@ -399,11 +343,11 @@ public class LibraryWindow extends JFrame {
 
         JButton deleteBtn = new JButton("Удалить");
         deleteBtn.addActionListener(e -> {
-            int selectedRow = table.getSelectedRow();
-            if (selectedRow >= 0) {
-                int modelRow = table.convertRowIndexToModel(selectedRow);
-                Client client = clientTableModel.getClientAt(modelRow);
-                service.deleteClient(client.getId());
+            int sel = table.getSelectedRow();
+            if (sel >= 0) {
+                int mr = table.convertRowIndexToModel(sel);
+                Client c = clientTableModel.getClientAt(mr);
+                service.deleteClient(c.getId());
                 clientTableModel.setClients(service.getAllClients());
             } else {
                 JOptionPane.showMessageDialog(this, "Выберите клиента для удаления");
@@ -411,9 +355,7 @@ public class LibraryWindow extends JFrame {
         });
 
         JButton refreshBtn = new JButton("Обновить");
-        refreshBtn.addActionListener(e -> {
-            clientTableModel.setClients(service.getAllClients());
-        });
+        refreshBtn.addActionListener(e -> clientTableModel.setClients(service.getAllClients()));
 
         JPanel buttons = new JPanel();
         buttons.add(addBtn);
@@ -424,7 +366,6 @@ public class LibraryWindow extends JFrame {
         panel.add(filterPanel, BorderLayout.NORTH);
         panel.add(scrollPane, BorderLayout.CENTER);
         panel.add(buttons, BorderLayout.SOUTH);
-
         return panel;
     }
 
@@ -432,44 +373,149 @@ public class LibraryWindow extends JFrame {
         private List<Client> clients;
         private final String[] columns = {"ID", "ФИО", "Пол", "Возраст"};
 
-        public ClientTableModel(List<Client> clients) {
-            this.clients = clients;
-        }
+        public ClientTableModel(List<Client> clients) { this.clients = clients; }
 
         public void setClients(List<Client> clients) {
             this.clients = clients;
             fireTableDataChanged();
         }
 
-        @Override
-        public int getRowCount() {
-            return clients.size();
-        }
+        @Override public int getRowCount() { return clients.size(); }
+        @Override public int getColumnCount() { return columns.length; }
+        @Override public String getColumnName(int col) { return columns[col]; }
 
         @Override
-        public int getColumnCount() {
-            return columns.length;
-        }
-
-        @Override
-        public String getColumnName(int column) {
-            return columns[column];
-        }
-
-        @Override
-        public Object getValueAt(int rowIndex, int columnIndex) {
-            Client client = clients.get(rowIndex);
-            return switch (columnIndex) {
-                case 0 -> client.getId();
-                case 1 -> client.getFullName();
-                case 2 -> client.getGender();
-                case 3 -> client.getAge();
+        public Object getValueAt(int row, int col) {
+            Client c = clients.get(row);
+            return switch (col) {
+                case 0 -> c.getId();
+                case 1 -> c.getFullName();
+                case 2 -> c.getGender();
+                case 3 -> c.getAge();
                 default -> null;
             };
         }
 
-        public Client getClientAt(int row) {
-            return clients.get(row);
+        public Client getClientAt(int row) { return clients.get(row); }
+    }
+
+    // ---------------- Выдача ----------------
+
+    private JPanel createLoanPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        // Загружаем все выдачи сразу
+        loanTableModel = new LoanTableModel(service.getAllLoans());
+        JTable table = new JTable(loanTableModel);
+        JScrollPane scrollPane = new JScrollPane(table);
+
+        TableRowSorter<LoanTableModel> sorter = new TableRowSorter<>(loanTableModel);
+        table.setRowSorter(sorter);
+
+        // --- Фильтр по ФИО клиента ---
+        JPanel filterPanel = new JPanel(new BorderLayout());
+        JLabel searchLabel = new JLabel("Поиск по ФИО клиента: ");
+        JTextField searchField = new JTextField();
+
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
+            private void applyFilter() {
+                String text = searchField.getText();
+                if (text.trim().isEmpty()) sorter.setRowFilter(null);
+                else sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1)); // 1 — колонка ФИО клиента
+            }
+        });
+
+        filterPanel.add(searchLabel, BorderLayout.WEST);
+        filterPanel.add(searchField, BorderLayout.CENTER);
+
+        JButton giveBtn = new JButton("Выдать книгу");
+        giveBtn.addActionListener(e -> {
+            List<Client> clients = service.getAllClients();
+            List<Book> books = service.getAllBooks();
+            if (clients.isEmpty() || books.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Добавьте клиентов и книги");
+                return;
+            }
+            BookLoanFormDialog dlg = new BookLoanFormDialog(this, clients, books);
+            dlg.setVisible(true);
+            if (dlg.isSaved()) {
+                service.loanBook(dlg.getSelectedClient(), dlg.getSelectedBook(),
+                        LocalDate.now(), dlg.getDaysToReturn());
+                // Обновляем все записи, а не только активные
+                loanTableModel.setLoans(service.getAllLoans());
+                bookTableModel.setBooks(service.getAllBooks());
+            }
+        });
+
+        JButton retBtn = new JButton("Вернуть книгу");
+        retBtn.addActionListener(e -> {
+            int sel = table.getSelectedRow();
+            if (sel >= 0) {
+                int mr = table.convertRowIndexToModel(sel);
+                BookLoan loan = loanTableModel.getLoanAt(mr);
+                if (!loan.isReturned()) {
+                    service.returnBook(loan.getId(), LocalDate.now());
+                    loanTableModel.setLoans(service.getAllLoans()); // Все записи
+                    bookTableModel.setBooks(service.getAllBooks());
+                } else {
+                    JOptionPane.showMessageDialog(this, "Эта запись уже закрыта");
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Выберите выдачу");
+            }
+        });
+
+        JButton refreshBtn = new JButton("Обновить");
+        refreshBtn.addActionListener(e -> loanTableModel.setLoans(service.getAllLoans()));
+
+        JPanel buttons = new JPanel();
+        buttons.add(giveBtn);
+        buttons.add(retBtn);
+        buttons.add(refreshBtn);
+
+        panel.add(filterPanel, BorderLayout.NORTH);
+        panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(buttons, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+
+
+    static class LoanTableModel extends AbstractTableModel {
+        private List<BookLoan> loans;
+        private final String[] columns = {"ID", "Клиент", "Книга", "Выдана", "Срок", "Возврат", "Статус"};
+
+        public LoanTableModel(List<BookLoan> loans) { this.loans = loans; }
+
+        public void setLoans(List<BookLoan> loans) {
+            this.loans = loans;
+            fireTableDataChanged();
         }
+
+        @Override public int getRowCount() { return loans.size(); }
+        @Override public int getColumnCount() { return columns.length; }
+        @Override public String getColumnName(int col) { return columns[col]; }
+
+        @Override
+        public Object getValueAt(int row, int col) {
+            BookLoan l = loans.get(row);
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+            return switch (col) {
+                case 0 -> l.getId();
+                case 1 -> l.getClient().getFullName();
+                case 2 -> l.getBook().getTitle();
+                case 3 -> l.getLoanDate().format(fmt);
+                case 4 -> l.getDueDate().format(fmt);
+                case 5 -> (l.getReturnDate() != null ? l.getReturnDate().format(fmt) : "");
+                case 6 -> l.isReturned() ? "Возвращена" : "На руках";
+                default -> null;
+            };
+        }
+
+        public BookLoan getLoanAt(int row) { return loans.get(row); }
     }
 }
