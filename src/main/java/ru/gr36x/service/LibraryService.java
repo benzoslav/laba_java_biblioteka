@@ -78,7 +78,7 @@ public class LibraryService {
             throw new IllegalStateException("Книга '" + book.getTitle() + "' отсутствует в наличии!");
         }
     }
-
+    //возврат книги
     public void returnBook(Long loanId, LocalDate returnDate) {
         BookLoan loan = DB.find(BookLoan.class, loanId);
         if (loan != null && !loan.isReturned()) {
@@ -89,21 +89,21 @@ public class LibraryService {
             loan.update();
         }
     }
-
+    //получает список активных выдач (книги не возвращены)
     public List<BookLoan> getActiveLoans() {
         return DB.find(BookLoan.class)
                 .where()
                 .eq("isReturned", false)
                 .findList();
     }
-
+//получает все выдачи для конкретного клиента
     public List<BookLoan> getLoansByClient(Long clientId) {
         return DB.find(BookLoan.class)
                 .where()
                 .eq("client.id", clientId)
                 .findList();
     }
-
+//получает все записи о выдачах
     public List<BookLoan> getAllLoans() {
         return BookLoan.find.all();
     }

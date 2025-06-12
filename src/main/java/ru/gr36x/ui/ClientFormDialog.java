@@ -22,13 +22,13 @@ public class ClientFormDialog extends JDialog {
         fullNameField = new JTextField();
         add(fullNameField);
 
-        add(new JLabel("Пол:"));
-        genderComboBox = new JComboBox<>(new String[]{"Мужской", "Женский"});
-        add(genderComboBox);
-
         add(new JLabel("Возраст:"));
         ageField = new JTextField();
         add(ageField);
+
+        add(new JLabel("Пол:"));
+        genderComboBox = new JComboBox<>(new String[]{"Мужской", "Женский"});
+        add(genderComboBox);
 
         if (client != null) {
             fullNameField.setText(client.getFullName());

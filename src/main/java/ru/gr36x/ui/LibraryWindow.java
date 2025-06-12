@@ -299,14 +299,41 @@ public class LibraryWindow extends JFrame {
         JLabel searchLabel = new JLabel("Поиск по ФИО: ");
         JTextField searchField = new JTextField();
 
+        // Добавляем слушатель изменений текста в поле поиска
         searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { applyFilter(); }
+            // Срабатывает при добавлении текста
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                applyFilter();
+            }
+
+            // Срабатывает при удалении текста
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                applyFilter();
+            }
+
+            // Срабатывает при изменении стиля текста
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                applyFilter();
+            }
+
+            // Основной метод применения фильтра
             private void applyFilter() {
+                // Получаем текущий текст из поля поиска
                 String text = searchField.getText();
-                if (text.trim().isEmpty()) sorter.setRowFilter(null);
-                else sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
+
+                // Если поле пустое или содержит только пробелы
+                if (text.trim().isEmpty()) {
+                    // Отключаем фильтр - показываем все строки
+                    sorter.setRowFilter(null);
+                } else {
+            /* Включаем фильтр с параметрами:
+               "(?i)" - флаг регистронезависимого поиска
+               text   - искомый текст
+               1      - номер столбца для поиска (индексация с 0)
+                        (в данном случае ищем во втором столбце - "Название")
+            */
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
+                }
             }
         });
 
